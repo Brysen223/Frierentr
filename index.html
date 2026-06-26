@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Frieren Spell-Grimoire Proof of Concept</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main id="game-shell">
+      <canvas id="game" width="1280" height="720" aria-label="Playable fantasy game prototype"></canvas>
+      <section id="hud" aria-live="polite">
+        <div class="meter-row">
+          <span>HP</span>
+          <div class="meter"><i id="hp-bar"></i></div>
+        </div>
+        <div class="meter-row">
+          <span>STA</span>
+          <div class="meter stamina"><i id="stamina-bar"></i></div>
+        </div>
+        <div class="meter-row">
+          <span>MP</span>
+          <div class="meter mana"><i id="mana-bar"></i></div>
+        </div>
+        <div class="status-line" id="status-line">Overworld</div>
+      </section>
+      <section id="objective">
+        <strong id="objective-title">Heines Krautgarten</strong>
+        <span id="objective-copy">Talk to Heine, clear the cursed bramble with Zoltraak, then claim the grimoire.</span>
+      </section>
+      <section id="dialogue" hidden>
+        <strong id="dialogue-name">Heine</strong>
+        <p id="dialogue-copy"></p>
+        <div id="dialogue-choices" hidden></div>
+        <span id="dialogue-prompt">E / Space</span>
+      </section>
+      <section id="mimic-qte" hidden>
+        <strong>Mash J to break free!</strong>
+        <div class="meter qte"><i id="mimic-qte-bar"></i></div>
+      </section>
+      <div id="letterbox-top" class="letterbox" hidden></div>
+      <div id="letterbox-bottom" class="letterbox" hidden></div>
+      <section id="spell-learned" hidden>
+        <span class="badge">Spell Learned</span>
+        <strong id="spell-name"></strong>
+        <p id="spell-desc"></p>
+        <span>E / Space to continue</span>
+      </section>
+      <section id="controls">
+        <span>WASD/Arrows</span><span>Move</span>
+        <span>Space</span><span>Dodge / Jump / Flugmagie</span>
+        <span>J</span><span>Zoltraak</span>
+        <span>E</span><span>Interact</span>
+        <span>R</span><span>Rest</span>
+      </section>
+      <div id="toast"></div>
+    </main>
+    <script src="src/main.js"></script>
+  </body>
+</html>

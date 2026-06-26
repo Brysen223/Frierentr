@@ -1,0 +1,173 @@
+{
+  "image": "frieren-sprite-sheet-packed.png",
+  "smallPreview": "frieren-sprite-sheet-packed-128.png",
+  "frameWidth": 320,
+  "frameHeight": 384,
+  "frameCount": 8,
+  "animations": {
+    "idle": [
+      "idle_front"
+    ],
+    "walk": [
+      "walk_1",
+      "walk_2",
+      "walk_3",
+      "walk_4"
+    ],
+    "ready": [
+      "ready"
+    ],
+    "aim": [
+      "aim_zoltraak"
+    ],
+    "cast": [
+      "cast_zoltraak"
+    ]
+  },
+  "frames": [
+    {
+      "name": "idle_front",
+      "index": 0,
+      "x": 0,
+      "y": 0,
+      "w": 320,
+      "h": 384,
+      "sourceBounds": {
+        "x": 51,
+        "y": 216,
+        "w": 203,
+        "h": 295
+      },
+      "pivot": {
+        "x": 160,
+        "y": 332
+      }
+    },
+    {
+      "name": "walk_1",
+      "index": 1,
+      "x": 320,
+      "y": 0,
+      "w": 320,
+      "h": 384,
+      "sourceBounds": {
+        "x": 301,
+        "y": 223,
+        "w": 254,
+        "h": 288
+      },
+      "pivot": {
+        "x": 160,
+        "y": 332
+      }
+    },
+    {
+      "name": "walk_2",
+      "index": 2,
+      "x": 640,
+      "y": 0,
+      "w": 320,
+      "h": 384,
+      "sourceBounds": {
+        "x": 569,
+        "y": 219,
+        "w": 228,
+        "h": 291
+      },
+      "pivot": {
+        "x": 160,
+        "y": 332
+      }
+    },
+    {
+      "name": "walk_3",
+      "index": 3,
+      "x": 960,
+      "y": 0,
+      "w": 320,
+      "h": 384,
+      "sourceBounds": {
+        "x": 816,
+        "y": 222,
+        "w": 225,
+        "h": 289
+      },
+      "pivot": {
+        "x": 160,
+        "y": 332
+      }
+    },
+    {
+      "name": "walk_4",
+      "index": 4,
+      "x": 1280,
+      "y": 0,
+      "w": 320,
+      "h": 384,
+      "sourceBounds": {
+        "x": 1056,
+        "y": 219,
+        "w": 226,
+        "h": 292
+      },
+      "pivot": {
+        "x": 160,
+        "y": 332
+      }
+    },
+    {
+      "name": "ready",
+      "index": 5,
+      "x": 1600,
+      "y": 0,
+      "w": 320,
+      "h": 384,
+      "sourceBounds": {
+        "x": 1321,
+        "y": 202,
+        "w": 146,
+        "h": 309
+      },
+      "pivot": {
+        "x": 160,
+        "y": 332
+      }
+    },
+    {
+      "name": "aim_zoltraak",
+      "index": 6,
+      "x": 1920,
+      "y": 0,
+      "w": 320,
+      "h": 384,
+      "sourceBounds": {
+        "x": 1529,
+        "y": 232,
+        "w": 293,
+        "h": 278
+      },
+      "pivot": {
+        "x": 160,
+        "y": 332
+      }
+    },
+    {
+      "name": "cast_zoltraak",
+      "index": 7,
+      "x": 2240,
+      "y": 0,
+      "w": 320,
+      "h": 384,
+      "sourceBounds": {
+        "x": 1845,
+        "y": 235,
+        "w": 319,
+        "h": 277
+      },
+      "pivot": {
+        "x": 160,
+        "y": 332
+      }
+    }
+  ]
+}
