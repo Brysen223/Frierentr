@@ -172,7 +172,7 @@ function buildCharSheet(defs) {
   for (const [key, def] of Object.entries(defs)) {
     const image = new Image();
     image.src = def.src;
-    sheet[key] = { image, count: def.count };
+    sheet[key] = { ...def, image };
   }
   return sheet;
 }
@@ -192,9 +192,33 @@ const FERN_SHEET = buildCharSheet({
 });
 
 const HIMMEL_SHEET = buildCharSheet({
-  idle: { src: ASSETS.characters.himmel.idle, count: 6 },
-  run: { src: ASSETS.characters.himmel.run, count: 8 },
-  attack: { src: ASSETS.characters.himmel.attack, count: 6 },
+  idle: {
+    src: ASSETS.characters.himmel.idle,
+    count: 6,
+    pivotX: 170,
+    pivotY: 487,
+    scaleMultiplier: 1,
+    cropInset: 2,
+    pixelPerfect: true,
+  },
+  run: {
+    src: ASSETS.characters.himmel.run,
+    count: 8,
+    pivotX: 140,
+    pivotY: 405,
+    scaleMultiplier: 1.64,
+    cropInset: 2,
+    pixelPerfect: true,
+  },
+  attack: {
+    src: ASSETS.characters.himmel.attack,
+    count: 6,
+    pivotX: 160,
+    pivotY: 442,
+    scaleMultiplier: 1.43,
+    cropInset: 2,
+    pixelPerfect: true,
+  },
 });
 
 const HIMMEL_ATTACK_DURATION = 0.34;
@@ -236,11 +260,25 @@ function drawCharacterSheet(sheet, rowKey, frameIndex, scale, flip) {
   const frameH = row.image.naturalHeight;
   const idx = clamp(frameIndex, 0, row.count - 1);
   const sx = idx * frameW;
-  const pivotX = frameW / 2;
-  const pivotY = frameH - 36;
+  const cropInset = row.cropInset || 0;
+  const sourceW = frameW - cropInset * 2;
+  const pivotX = row.pivotX ?? frameW / 2;
+  const pivotY = row.pivotY ?? frameH - 36;
+  const renderScale = scale * (row.scaleMultiplier || 1);
   ctx.save();
-  ctx.scale(flip ? -scale : scale, scale);
-  ctx.drawImage(row.image, sx, 0, frameW, frameH, -pivotX, -pivotY, frameW, frameH);
+  if (row.pixelPerfect) ctx.imageSmoothingEnabled = false;
+  ctx.scale(flip ? -renderScale : renderScale, renderScale);
+  ctx.drawImage(
+    row.image,
+    sx + cropInset,
+    0,
+    sourceW,
+    frameH,
+    cropInset - pivotX,
+    -pivotY,
+    sourceW,
+    frameH,
+  );
   ctx.restore();
   return true;
 }
