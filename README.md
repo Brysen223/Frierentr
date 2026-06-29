@@ -9,7 +9,15 @@ Both modes share one character, one progression state, and one story.
 
 ## Quick start
 
-The game uses JavaScript modules, so run it through the included local server:
+For the easy path, double-click the launcher matching the workspace you want:
+
+- `Launch - Main.bat`
+- `Launch - Brysen.bat`
+- `Launch - Dakota.bat`
+
+Each personal launcher uses its own folder, branch, and port. It never switches another workspace's branch or modifies uncommitted files.
+
+To start the main workspace manually:
 
 ```powershell
 .\scripts\start.ps1

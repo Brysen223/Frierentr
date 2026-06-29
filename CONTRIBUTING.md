@@ -2,11 +2,13 @@
 
 ## Branch workflow
 
-1. Start from your personal branch: `brysen` or `dakota`.
-2. Pull or merge the latest local `main` before beginning a new chunk of work.
-3. Keep each commit focused on one feature or fix.
-4. Run the game locally and check the browser console before merging.
-5. Merge completed work into `main`; do not develop directly on `main`.
+1. Double-click your launcher in the main `Frieren` folder.
+2. Work only in the personal folder it opens: `Frieren-Brysen` or `Frieren-Dakota`.
+3. Confirm the folder's branch before committing.
+4. Pull or merge the latest local `main` before beginning a new chunk of work.
+5. Keep each commit focused on one feature or fix.
+6. Run the game locally and check the browser console before merging.
+7. Merge completed work into `main`; do not develop directly on `main`.
 
 No branch is permanently assigned to a gameplay mode. Coordinate ownership before editing shared files.
 
