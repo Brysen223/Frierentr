@@ -1443,7 +1443,7 @@ function update(dt) {
   if (handleSpellPopupInput()) return;
   if (handleDialogueInput()) return;
 
-  if (game.mode === "overworld" && tapped("m")) {
+  if (["overworld", "level1"].includes(game.mode) && tapped("m")) {
     game.map.open = !game.map.open;
     game.map.selected = 0;
     input.tap.clear();
@@ -1496,12 +1496,56 @@ function checkMapDiscoveries() {
 
 function nearestWagon() {
   const p = game.player;
-  return mapData.wagons.find((w) => w.discovered && dist(p.x, p.y, w.x, w.y) < 100) || null;
+  return activeTravelRegion().wagons.find(
+    (wagon) => wagon.discovered && dist(p.x, p.y, wagon.x, wagon.y) < 100,
+  ) || null;
+}
+
+function allTravelWagons() {
+  return [...mapData.wagons, ...levelOneData.wagons];
+}
+
+function activeTravelRegion() {
+  if (game.mode === "level1") {
+    return {
+      name: "Waldlichtung",
+      width: levelOneData.width,
+      height: levelOneData.height,
+      cities: [
+        {
+          id: "waldlichtung-dorf",
+          name: levelOneData.village.name,
+          x: levelOneData.village.x,
+          y: levelOneData.village.y,
+          known: true,
+        },
+      ],
+      dungeons: [
+        {
+          id: "waldverlies",
+          name: levelOneData.southForest.dungeonEntrance.name,
+          x: levelOneData.southForest.dungeonEntrance.x,
+          y: levelOneData.southForest.dungeonEntrance.y,
+          discovered: true,
+        },
+      ],
+      wagons: levelOneData.wagons,
+    };
+  }
+
+  return {
+    name: "Heiterfeld",
+    width: overworldData.width,
+    height: overworldData.height,
+    cities: mapData.cities,
+    dungeons: mapData.dungeons,
+    wagons: mapData.wagons,
+  };
 }
 
 function updateMapOverlay() {
   const origin = nearestWagon();
-  const destinations = getWagonDestinations(mapData.wagons, origin);
+  const destinations = getWagonDestinations(allTravelWagons(), origin);
   game.map.selected = clamp(game.map.selected, 0, Math.max(0, destinations.length - 1));
 
   if (tapped("escape", "m")) {
@@ -1527,11 +1571,13 @@ function travelByWagon(origin, destination) {
     return;
   }
   p.gold -= cost;
+  game.mode = destination.mode;
   p.x = destination.x + 30;
   p.y = destination.y;
   p.vx = 0;
   p.vy = 0;
   game.map.open = false;
+  if (destination.mode === "level1") snapCompanionToPlayer();
   showToast(`Traveled to ${destination.name} for ${cost} gold.`);
   saveCurrentGame();
 }
@@ -2188,6 +2234,8 @@ function switchToCastleInterior() {
 
 function switchToLevel1() {
   game.mode = "level1";
+  const clearingStation = levelOneData.wagons.find((wagon) => wagon.id === "l1-clearing");
+  if (clearingStation) clearingStation.discovered = true;
   const p = game.player;
   p.x = levelOneData.spawn.x;
   p.y = levelOneData.spawn.y;
@@ -2196,6 +2244,7 @@ function switchToLevel1() {
   p.facingX = 0;
   p.facingY = 1;
   snapCompanionToPlayer();
+  saveCurrentGame();
   showCutscene("Frieren", [
     "...",
     "Where... is this?",
@@ -2207,6 +2256,13 @@ function switchToLevel1() {
 
 function updateLevel1(dt) {
   const p = game.player;
+  for (const wagon of levelOneData.wagons) {
+    if (!wagon.discovered && dist(p.x, p.y, wagon.x, wagon.y) < wagon.discoverRadius) {
+      wagon.discovered = true;
+      showToast(`${wagon.name} discovered. Wagons now travel here.`);
+      saveCurrentGame();
+    }
+  }
   maybeTriggerMountainBossIntro(p);
   if (game.dialogue.active) return;
   let mx = (held("d", "arrowright") ? 1 : 0) - (held("a", "arrowleft") ? 1 : 0);
@@ -2292,20 +2348,8 @@ function updateLevel1(dt) {
     }
     const wagon = levelOneData.wagons.find((w) => dist(p.x, p.y, w.x, w.y) < 80);
     if (wagon) {
-      const other = levelOneData.wagons.find((w) => w.id !== wagon.id);
-      if (other) {
-        const cost = 8;
-        if (game.player.gold < cost) {
-          showToast(`Not enough gold. The wagon to ${other.name} costs ${cost}.`);
-        } else {
-          game.player.gold -= cost;
-          p.x = other.x + 30;
-          p.y = other.y;
-          p.vx = 0;
-          p.vy = 0;
-          showToast(`Traveled to ${other.name} for ${cost} gold.`);
-        }
-      }
+      game.map.open = true;
+      game.map.selected = 0;
       return;
     }
   }
@@ -3308,6 +3352,7 @@ function draw() {
 
 function drawMapOverlay() {
   const p = game.player;
+  const region = activeTravelRegion();
   const panelW = 330;
   const panelX = VIEW_W - panelW - 30;
   const panelY = 70;
@@ -3316,15 +3361,15 @@ function drawMapOverlay() {
   const mapAreaY = 80;
   const mapAreaW = panelX - mapAreaX - 30;
   const mapAreaH = VIEW_H - 140;
-  const scaleX = mapAreaW / overworldData.width;
-  const scaleY = mapAreaH / overworldData.height;
+  const scaleX = mapAreaW / region.width;
+  const scaleY = mapAreaH / region.height;
   const scale = Math.min(scaleX, scaleY);
-  const mapW = overworldData.width * scale;
-  const mapH = overworldData.height * scale;
+  const mapW = region.width * scale;
+  const mapH = region.height * scale;
   const offX = mapAreaX + (mapAreaW - mapW) / 2;
   const offY = mapAreaY + (mapAreaH - mapH) / 2;
   const origin = nearestWagon();
-  const destinations = getWagonDestinations(mapData.wagons, origin);
+  const destinations = getWagonDestinations(allTravelWagons(), origin);
   const selectedDestination = destinations[game.map.selected] || null;
 
   ctx.fillStyle = "rgba(8,9,10,0.82)";
@@ -3338,9 +3383,9 @@ function drawMapOverlay() {
   ctx.fillStyle = "#f5dd8b";
   ctx.font = "800 22px Inter, sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText("World Map", VIEW_W / 2, 44);
+  ctx.fillText(`${region.name} Map`, VIEW_W / 2, 44);
 
-  for (const city of mapData.cities) {
+  for (const city of region.cities) {
     if (!city.known) continue;
     const x = offX + city.x * scale;
     const y = offY + city.y * scale;
@@ -3348,7 +3393,7 @@ function drawMapOverlay() {
     drawMapLabel(x, y - 14, city.name, "#2c211b");
   }
 
-  for (const dungeon of mapData.dungeons) {
+  for (const dungeon of region.dungeons) {
     if (!dungeon.discovered) continue;
     const x = offX + dungeon.x * scale;
     const y = offY + dungeon.y * scale;
@@ -3362,7 +3407,7 @@ function drawMapOverlay() {
     drawMapLabel(x, y - 16, dungeon.name, "#2c211b");
   }
 
-  for (const wagon of mapData.wagons) {
+  for (const wagon of region.wagons) {
     if (!wagon.discovered) continue;
     const x = offX + wagon.x * scale;
     const y = offY + wagon.y * scale;
@@ -3429,7 +3474,11 @@ function drawMapOverlay() {
         ctx.fillText(`${selected ? "▶" : " "} ${destination.name}`, panelX + 24, rowY + 18);
         ctx.fillStyle = selected ? "#fff6dc" : "rgba(244,241,232,0.7)";
         ctx.font = "700 11px Inter, sans-serif";
-        ctx.fillText(`${travelCost(origin, destination)} gold`, panelX + 44, rowY + 35);
+        ctx.fillText(
+          `${destination.region} · ${travelCost(origin, destination)} gold`,
+          panelX + 44,
+          rowY + 35,
+        );
       });
     }
   }
@@ -5332,6 +5381,7 @@ function serializeGame() {
       cities: mapData.cities.map((c) => c.known),
       wagons: mapData.wagons.map((w) => w.discovered),
       dungeons: mapData.dungeons.map((d) => d.discovered),
+      levelOneWagons: levelOneData.wagons.map((wagon) => wagon.discovered),
     },
   };
 }
@@ -5380,6 +5430,10 @@ function applySave(data) {
   mapData.cities.forEach((c, i) => { c.known = data.mapKnown.cities[i]; });
   mapData.wagons.forEach((w, i) => { w.discovered = data.mapKnown.wagons[i]; });
   mapData.dungeons.forEach((d, i) => { d.discovered = data.mapKnown.dungeons[i]; });
+  levelOneData.wagons.forEach((wagon, index) => {
+    const saved = data.mapKnown.levelOneWagons?.[index];
+    wagon.discovered = saved ?? (wagon.id === "l1-clearing" && game.level1.started);
+  });
   forestDungeonData.cleared = Boolean(data.forestDungeonCleared);
   resetOverworldEnemies();
   resetDungeonEnemies();
@@ -5487,6 +5541,9 @@ function resetWorldStateForNewGame() {
   mapData.cities.forEach((c) => { c.known = c.id === "heiterfeld"; });
   mapData.wagons.forEach((w) => { w.discovered = w.id === "heiterfeld"; });
   mapData.dungeons.forEach((d) => { d.discovered = false; });
+  levelOneData.wagons.forEach((wagon) => {
+    wagon.discovered = false;
+  });
 }
 
 function startNewGame(slotIndex, characterId) {
