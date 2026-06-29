@@ -40,3 +40,13 @@ No branch is permanently assigned to a gameplay mode. Coordinate ownership befor
 - Overworld movement works.
 - A dungeon transition works.
 - The browser console has no new errors.
+
+## Brysen dungeon test
+
+While the Hohlgrund rebuild is in progress, append `?test=dungeon` to the local game URL and start a new save to enter the generated dungeon immediately:
+
+```text
+http://127.0.0.1:49217/?test=dungeon
+```
+
+This shortcut exists only for development and should be removed before the dungeon branch is merged into `main`.

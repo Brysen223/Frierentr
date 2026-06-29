@@ -1,3 +1,5 @@
+import { createHohlgrundDungeon } from "./generator.js";
+
 export const forestDungeonData = {
   height: 720,
   floors: [
@@ -41,128 +43,7 @@ export const forestDungeonData = {
   bossIntroShown: false,
 };
 
-export const dungeonData = {
-  height: 720,
-  floors: [
-    {
-      name: "Hohlgrund I: Moss Gallery",
-      width: 2960,
-      start: { x: 112, y: 510 },
-      descent: { x: 2825, y: 512, w: 64, h: 118, label: "E: Descend" },
-      platforms: [
-        { x: 0, y: 642, w: 520, h: 78 },
-        { x: 575, y: 594, w: 420, h: 42 },
-        { x: 1035, y: 524, w: 350, h: 38 },
-        { x: 1460, y: 594, w: 450, h: 42 },
-        { x: 2020, y: 642, w: 940, h: 78 },
-        { x: 380, y: 456, w: 150, h: 24 },
-        { x: 755, y: 412, w: 155, h: 24 },
-        { x: 1200, y: 372, w: 190, h: 24 },
-        { x: 1655, y: 452, w: 190, h: 24 },
-        { x: 2140, y: 488, w: 165, h: 24 },
-      ],
-      spikes: [
-        { x: 520, y: 632, w: 80, h: 28 },
-        { x: 980, y: 626, w: 90, h: 28 },
-        { x: 1375, y: 626, w: 80, h: 28 },
-        { x: 1920, y: 632, w: 92, h: 28 },
-      ],
-      secrets: [
-        { id: "moss-left", x: 510, y: 455, w: 32, h: 142, hint: "Hairline crack" },
-      ],
-      chests: [
-        { id: "moss-flugmagie", x: 430, y: 414, w: 38, h: 34, loot: "flugmagie", secretId: "moss-left" },
-        { id: "moss-visible", x: 2210, y: 450, w: 38, h: 34, loot: "heal" },
-      ],
-      enemies: [
-        ["crawler", 700, 594, 30, 42, 70],
-        ["crawler", 1510, 594, 30, 50, 70],
-        ["bat", 1120, 390, 28, 34, 84],
-      ],
-    },
-    {
-      name: "Hohlgrund II: Echo Cistern",
-      width: 3180,
-      start: { x: 96, y: 510 },
-      descent: { x: 3020, y: 405, w: 64, h: 118, label: "E: Descend" },
-      platforms: [
-        { x: 0, y: 642, w: 470, h: 78 },
-        { x: 520, y: 574, w: 380, h: 42 },
-        { x: 950, y: 642, w: 360, h: 78 },
-        { x: 1345, y: 555, w: 420, h: 42 },
-        { x: 1810, y: 604, w: 470, h: 42 },
-        { x: 2380, y: 548, w: 800, h: 42 },
-        { x: 440, y: 430, w: 175, h: 24 },
-        { x: 825, y: 390, w: 205, h: 24 },
-        { x: 1190, y: 330, w: 185, h: 24 },
-        { x: 1490, y: 410, w: 150, h: 24 },
-        { x: 1710, y: 430, w: 185, h: 24 },
-        { x: 2190, y: 452, w: 220, h: 24 },
-      ],
-      spikes: [
-        { x: 470, y: 632, w: 86, h: 28 },
-        { x: 1290, y: 632, w: 92, h: 28 },
-        { x: 1760, y: 626, w: 72, h: 28 },
-        { x: 2256, y: 632, w: 116, h: 28 },
-      ],
-      secrets: [
-        { id: "cistern-high", x: 1038, y: 276, w: 34, h: 112, hint: "Damp false wall" },
-        { id: "cistern-low", x: 2318, y: 548, w: 34, h: 96, hint: "Loose stone" },
-      ],
-      chests: [
-        { id: "cistern-grimoire", x: 1160, y: 244, w: 38, h: 34, loot: "range", secretId: "cistern-high" },
-        { id: "cistern-cache", x: 2495, y: 506, w: 38, h: 34, loot: "power", secretId: "cistern-low" },
-      ],
-      enemies: [
-        ["bat", 730, 460, 28, 42, 84],
-        ["bat", 1580, 450, 28, 48, 84],
-        ["crawler", 2025, 604, 32, 68, 90],
-        ["shade", 2625, 520, 52, 105, 128],
-      ],
-    },
-    {
-      name: "Hohlgrund III: Sunless Reliquary",
-      width: 3420,
-      start: { x: 110, y: 510 },
-      exit: { x: 3305, y: 424, w: 58, h: 112 },
-      finalMimic: { x: 3188, y: 598, w: 50, h: 40 },
-      platforms: [
-        { x: 0, y: 642, w: 420, h: 78 },
-        { x: 500, y: 590, w: 360, h: 42 },
-        { x: 910, y: 540, w: 390, h: 42 },
-        { x: 1370, y: 606, w: 400, h: 42 },
-        { x: 1810, y: 548, w: 450, h: 42 },
-        { x: 2360, y: 642, w: 1060, h: 78 },
-        { x: 330, y: 450, w: 170, h: 24 },
-        { x: 700, y: 390, w: 190, h: 24 },
-        { x: 1080, y: 344, w: 160, h: 24 },
-        { x: 1265, y: 334, w: 200, h: 24 },
-        { x: 1655, y: 430, w: 200, h: 24 },
-        { x: 2100, y: 394, w: 210, h: 24 },
-      ],
-      spikes: [
-        { x: 425, y: 632, w: 90, h: 28 },
-        { x: 1288, y: 632, w: 96, h: 28 },
-        { x: 1760, y: 632, w: 82, h: 28 },
-        { x: 2248, y: 632, w: 110, h: 28 },
-      ],
-      secrets: [
-        { id: "reliquary-roof", x: 898, y: 330, w: 34, h: 78, hint: "Moon-scratched wall" },
-        { id: "reliquary-under", x: 2298, y: 548, w: 34, h: 96, hint: "Cold draft" },
-      ],
-      chests: [
-        { id: "reliquary-formula", x: 1015, y: 478, w: 38, h: 34, loot: "formula", secretId: "reliquary-roof" },
-        { id: "reliquary-cache", x: 2460, y: 598, w: 38, h: 34, loot: "mana", secretId: "reliquary-under" },
-      ],
-      enemies: [
-        ["bat", 640, 430, 30, 52, 96],
-        ["shade", 1180, 470, 54, 120, 128],
-        ["crawler", 2020, 548, 34, 82, 90],
-        ["knight", 2880, 642, 62, 260, 180],
-      ],
-    },
-  ],
-};
+export const dungeonData = createHohlgrundDungeon();
 
 export const cryptData = {
   height: 720,
@@ -242,4 +123,3 @@ export const cryptData = {
     },
   ],
 };
-

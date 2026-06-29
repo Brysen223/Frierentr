@@ -45,6 +45,7 @@ const hud = {
 
 const VIEW_W = 1280;
 const VIEW_H = 720;
+const DUNGEON_TEST_MODE = new URLSearchParams(window.location.search).get("test") === "dungeon";
 const input = { down: new Set(), tap: new Set() };
 const playerSprite = new Image();
 playerSprite.src = ASSETS.characters.frieren.packed;
@@ -346,6 +347,10 @@ const game = {
         known: false,
         name: "Mikheit",
       },
+      grundriss: {
+        known: false,
+        name: "Grundriss",
+      },
       sturmklinge: {
         known: false,
         power: 30,
@@ -400,8 +405,10 @@ const game = {
   dungeon: {
     entered: false,
     completed: false,
+    mapOpen: false,
     floorIndex: 0,
     floorEnemies: [],
+    visitedCells: new Set(),
     revealedSecrets: new Set(),
     openedChests: new Set(),
     finalMimicOpen: false,
@@ -487,6 +494,8 @@ function resetDungeonEnemies() {
   ));
   game.dungeon.revealedSecrets = new Set();
   game.dungeon.openedChests = new Set();
+  game.dungeon.visitedCells = new Set();
+  game.dungeon.mapOpen = false;
   game.dungeon.finalMimicOpen = false;
   game.dungeon.lootFound = 0;
   activateDungeonFloor(0);
@@ -1168,6 +1177,21 @@ function activateDungeonFloor(index) {
   game.dungeon.boss = null;
   game.dungeon.projectiles = [];
   game.dungeon.motes = [];
+  markDungeonMapPosition();
+}
+
+function dungeonMapCell() {
+  const floor = activeDungeonFloor();
+  const path = floor.topology?.criticalPath;
+  if (!path?.length) return null;
+  const progress = clamp(game.player.x / Math.max(1, floor.width), 0, 1);
+  return path[Math.round(progress * (path.length - 1))];
+}
+
+function markDungeonMapPosition() {
+  const cell = dungeonMapCell();
+  if (!cell) return;
+  game.dungeon.visitedCells.add(`${game.dungeon.floorIndex}:${cell[0]},${cell[1]}`);
 }
 
 function dungeonSolids() {
@@ -1480,6 +1504,17 @@ function update(dt) {
 
   if (handleSpellPopupInput()) return;
   if (handleDialogueInput()) return;
+
+  if (game.mode === "dungeon" && p.spells.grundriss.known && tapped("m")) {
+    game.dungeon.mapOpen = !game.dungeon.mapOpen;
+    input.tap.clear();
+  }
+  if (game.dungeon.mapOpen) {
+    if (tapped("escape", "m")) game.dungeon.mapOpen = false;
+    updateHud();
+    input.tap.clear();
+    return;
+  }
 
   if (["overworld", "level1"].includes(game.mode) && tapped("m")) {
     game.map.open = !game.map.open;
@@ -1885,7 +1920,16 @@ function switchToDungeon() {
   p.facingX = 1;
   p.facingY = 0;
   game.dungeon.entered = true;
-  showToast("Entered Hohlgrund. Search cracked walls for hidden grimoires.");
+  markDungeonMapPosition();
+  if (!p.spells.grundriss.known) {
+    p.spells.grundriss.known = true;
+    showSpellLearned(
+      "Grundriss",
+      "A survey spell that reveals Hohlgrund's generated floor plans. Press M inside the dungeon to inspect every floor.",
+    );
+  } else {
+    showToast("Entered Hohlgrund. Press M to inspect the floor plans.");
+  }
 }
 
 function switchToCrypt() {
@@ -2799,6 +2843,7 @@ function updateDungeon(dt) {
 
   const p = game.player;
   const floor = activeDungeonFloor();
+  markDungeonMapPosition();
   maybeTriggerRitterIntro(floor, p);
   if (game.dialogue.active) return;
 
@@ -3335,7 +3380,7 @@ function updateHud() {
     const floor = activeDungeonFloor();
     const flight = p.spells.flugmagie;
     const flightText = flight.known ? ` | Flug ${Math.ceil(flight.remaining * 10) / 10}s` : "";
-    hud.status.textContent = `${floor.name} | Loot ${game.dungeon.lootFound}/6${flightText}`;
+    hud.status.textContent = `${floor.name} | Loot ${game.dungeon.lootFound}/6 | M: Grundriss${flightText}`;
     hud.title.textContent = game.dungeon.completed ? "Ausgangstor" : floor.name;
     hud.copy.textContent = game.dungeon.completed
       ? "Mikheit says the final chest is a mimic. Leave, or test the one percent."
@@ -3386,6 +3431,77 @@ function draw() {
   else if (game.mode === "forestDungeon") drawForestDungeonScene();
   ctx.restore();
   if (game.map.open) drawMapOverlay();
+  if (game.dungeon.mapOpen) drawDungeonMapOverlay();
+}
+
+function drawDungeonMapOverlay() {
+  ctx.fillStyle = "rgba(5,7,10,0.94)";
+  ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+  ctx.fillStyle = "#f5dd8b";
+  ctx.font = "900 24px Inter, sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("Grundriss: Hohlgrund", VIEW_W / 2, 48);
+
+  const tileSize = 9;
+  const mapWidth = 34 * tileSize;
+  const gap = 80;
+  const totalWidth = dungeonData.floors.length * mapWidth + (dungeonData.floors.length - 1) * gap;
+  const startX = (VIEW_W - totalWidth) / 2;
+  const startY = 125;
+
+  dungeonData.floors.forEach((floor, floorIndex) => {
+    const topology = floor.topology;
+    const ox = startX + floorIndex * (mapWidth + gap);
+    const oy = startY;
+    const active = floorIndex === game.dungeon.floorIndex;
+
+    ctx.fillStyle = active ? "#fff6dc" : "rgba(255,246,220,0.62)";
+    ctx.font = "800 14px Inter, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(`Floor ${floorIndex + 1}`, ox + mapWidth / 2, oy - 22);
+
+    for (let y = 0; y < topology.height; y += 1) {
+      for (let x = 0; x < topology.width; x += 1) {
+        if (topology.tiles[y][x] !== "0") continue;
+        const visited = game.dungeon.visitedCells.has(`${floorIndex}:${x},${y}`);
+        ctx.fillStyle = visited
+          ? "#f5dd8b"
+          : active
+            ? "rgba(180,231,238,0.42)"
+            : "rgba(180,231,238,0.22)";
+        ctx.fillRect(ox + x * tileSize, oy + y * tileSize, tileSize - 1, tileSize - 1);
+      }
+    }
+
+    const [entranceX, entranceY] = topology.entrance;
+    const [objectiveX, objectiveY] = topology.objective;
+    ctx.fillStyle = "#72b7e8";
+    ctx.fillRect(ox + entranceX * tileSize - 2, oy + entranceY * tileSize - 2, tileSize + 3, tileSize + 3);
+    ctx.fillStyle = floorIndex === dungeonData.floors.length - 1 ? "#d49ae8" : "#8bd6bd";
+    ctx.fillRect(ox + objectiveX * tileSize - 2, oy + objectiveY * tileSize - 2, tileSize + 3, tileSize + 3);
+
+    if (active) {
+      const current = dungeonMapCell();
+      if (current) {
+        ctx.fillStyle = "#e65b5b";
+        ctx.beginPath();
+        ctx.arc(
+          ox + current[0] * tileSize + tileSize / 2,
+          oy + current[1] * tileSize + tileSize / 2,
+          5,
+          0,
+          TAU,
+        );
+        ctx.fill();
+      }
+    }
+  });
+
+  ctx.fillStyle = "rgba(255,246,220,0.78)";
+  ctx.font = "700 13px Inter, sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("Blue: entrance   Green: descent   Purple: objective   Red: you", VIEW_W / 2, 585);
+  ctx.fillText("M or Esc: close Grundriss", VIEW_W / 2, 620);
 }
 
 function drawMapOverlay() {
@@ -5394,6 +5510,9 @@ function serializeGame() {
       entered: game.dungeon.entered,
       completed: game.dungeon.completed,
       floorIndex: game.dungeon.floorIndex,
+      visitedCells: [...game.dungeon.visitedCells],
+      revealedSecrets: [...game.dungeon.revealedSecrets],
+      openedChests: [...game.dungeon.openedChests],
     },
     crypt: {
       entered: game.crypt.entered,
@@ -5480,6 +5599,9 @@ function applySave(data) {
   resetForestDungeonEnemies();
   game.overworld.shadeDefeated = data.shadeDefeated;
   if (data.dungeon.floorIndex) activateDungeonFloor(data.dungeon.floorIndex);
+  game.dungeon.visitedCells = new Set(data.dungeon.visitedCells || []);
+  game.dungeon.revealedSecrets = new Set(data.dungeon.revealedSecrets || []);
+  game.dungeon.openedChests = new Set(data.dungeon.openedChests || []);
   if (data.crypt && data.crypt.floorIndex) activateCryptFloor(data.crypt.floorIndex);
 }
 
@@ -5602,6 +5724,10 @@ function startNewGame(slotIndex, characterId) {
   resetCryptEnemies();
   resetLevelOneEnemies();
   resetForestDungeonEnemies();
+  if (DUNGEON_TEST_MODE) {
+    game.overworld.shadeDefeated = true;
+    switchToDungeon();
+  }
   saveCurrentGame();
   closeMenu();
   showToast(`Playing as ${CHARACTERS[characterId].name}. ${characterId === "stark" ? "Press J to swing Cleaving Light." : "Press J to cast."}`);
