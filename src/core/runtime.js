@@ -10,6 +10,11 @@ import {
   mapData,
   overworldData,
 } from "../overworld/data.js";
+import {
+  getWagonDestinations,
+  moveWagonSelection,
+  travelCost,
+} from "../overworld/fast-travel.js";
 import { cryptData, dungeonData, forestDungeonData } from "../dungeons/data.js";
 const canvas = document.querySelector("#game");
 const ctx = canvas.getContext("2d");
@@ -1495,27 +1500,23 @@ function nearestWagon() {
 }
 
 function updateMapOverlay() {
-  const discovered = mapData.wagons.filter((w) => w.discovered);
   const origin = nearestWagon();
-  const destinations = origin ? discovered.filter((w) => w.id !== origin.id) : [];
+  const destinations = getWagonDestinations(mapData.wagons, origin);
+  game.map.selected = clamp(game.map.selected, 0, Math.max(0, destinations.length - 1));
 
   if (tapped("escape", "m")) {
     game.map.open = false;
     return;
   }
-  if (tapped("arrowdown", "s") && destinations.length) {
-    game.map.selected = (game.map.selected + 1) % destinations.length;
+  if (tapped("arrowdown", "arrowright", "s", "d") && destinations.length) {
+    game.map.selected = moveWagonSelection(game.map.selected, 1, destinations.length);
   }
-  if (tapped("arrowup", "w") && destinations.length) {
-    game.map.selected = (game.map.selected - 1 + destinations.length) % destinations.length;
+  if (tapped("arrowup", "arrowleft", "w", "a") && destinations.length) {
+    game.map.selected = moveWagonSelection(game.map.selected, -1, destinations.length);
   }
-  if (tapped("enter", " ") && origin && destinations.length) {
+  if (tapped("enter", "e", " ") && origin && destinations.length) {
     travelByWagon(origin, destinations[game.map.selected]);
   }
-}
-
-function travelCost(a, b) {
-  return 10 + Math.round(dist(a.x, a.y, b.x, b.y) / 200);
 }
 
 function travelByWagon(origin, destination) {
@@ -3307,21 +3308,34 @@ function draw() {
 
 function drawMapOverlay() {
   const p = game.player;
-  const scaleX = (VIEW_W - 80) / overworldData.width;
-  const scaleY = (VIEW_H - 140) / overworldData.height;
+  const panelW = 330;
+  const panelX = VIEW_W - panelW - 30;
+  const panelY = 70;
+  const panelH = VIEW_H - 110;
+  const mapAreaX = 40;
+  const mapAreaY = 80;
+  const mapAreaW = panelX - mapAreaX - 30;
+  const mapAreaH = VIEW_H - 140;
+  const scaleX = mapAreaW / overworldData.width;
+  const scaleY = mapAreaH / overworldData.height;
   const scale = Math.min(scaleX, scaleY);
-  const offX = 40;
-  const offY = 70;
+  const mapW = overworldData.width * scale;
+  const mapH = overworldData.height * scale;
+  const offX = mapAreaX + (mapAreaW - mapW) / 2;
+  const offY = mapAreaY + (mapAreaH - mapH) / 2;
+  const origin = nearestWagon();
+  const destinations = getWagonDestinations(mapData.wagons, origin);
+  const selectedDestination = destinations[game.map.selected] || null;
 
   ctx.fillStyle = "rgba(8,9,10,0.82)";
   ctx.fillRect(0, 0, VIEW_W, VIEW_H);
   ctx.fillStyle = "#e7d8ab";
-  ctx.fillRect(offX, offY, overworldData.width * scale, overworldData.height * scale);
+  ctx.fillRect(offX, offY, mapW, mapH);
   ctx.strokeStyle = "rgba(74,55,33,0.6)";
   ctx.lineWidth = 4;
-  ctx.strokeRect(offX, offY, overworldData.width * scale, overworldData.height * scale);
+  ctx.strokeRect(offX, offY, mapW, mapH);
 
-  ctx.fillStyle = "#2c211b";
+  ctx.fillStyle = "#f5dd8b";
   ctx.font = "800 22px Inter, sans-serif";
   ctx.textAlign = "center";
   ctx.fillText("World Map", VIEW_W / 2, 44);
@@ -3352,11 +3366,19 @@ function drawMapOverlay() {
     if (!wagon.discovered) continue;
     const x = offX + wagon.x * scale;
     const y = offY + wagon.y * scale;
-    ctx.fillStyle = "#3f5e8a";
+    const selected = selectedDestination?.id === wagon.id;
+    if (selected) {
+      ctx.strokeStyle = "#f6c453";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(x, y, 13, 0, TAU);
+      ctx.stroke();
+    }
+    ctx.fillStyle = selected ? "#f6c453" : "#3f5e8a";
     ctx.beginPath();
-    ctx.arc(x, y, 7, 0, TAU);
+    ctx.arc(x, y, selected ? 8 : 7, 0, TAU);
     ctx.fill();
-    drawMapLabel(x, y + 20, wagon.name, "#1c2a3a");
+    drawMapLabel(x, y + 20, wagon.name, selected ? "#7a4515" : "#1c2a3a");
   }
 
   const px = offX + p.x * scale;
@@ -3366,36 +3388,63 @@ function drawMapOverlay() {
   ctx.arc(px, py, 6, 0, TAU);
   ctx.fill();
 
-  const origin = nearestWagon();
-  const panelX = offX + overworldData.width * scale + 20;
-  const panelW = VIEW_W - panelX - 30;
-  if (panelW > 160) {
-    ctx.fillStyle = "rgba(12,13,14,0.7)";
-    ctx.fillRect(panelX, offY, panelW, overworldData.height * scale);
-    ctx.fillStyle = "#fff6dc";
-    ctx.font = "800 14px Inter, sans-serif";
-    ctx.textAlign = "left";
-    ctx.fillText(`Gold: ${p.gold}`, panelX + 14, offY + 28);
-    if (!origin) {
-      wrapText("Stand near a wagon station to fast travel.", panelX + 14, offY + 56, panelW - 28);
+  ctx.fillStyle = "rgba(12,13,14,0.88)";
+  ctx.fillRect(panelX, panelY, panelW, panelH);
+  ctx.strokeStyle = "rgba(245,221,139,0.55)";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(panelX, panelY, panelW, panelH);
+  ctx.fillStyle = "#f5dd8b";
+  ctx.font = "900 16px Inter, sans-serif";
+  ctx.textAlign = "left";
+  ctx.fillText("FAST TRAVEL", panelX + 18, panelY + 30);
+  ctx.fillStyle = "#fff6dc";
+  ctx.font = "800 13px Inter, sans-serif";
+  ctx.fillText(`Gold: ${p.gold}`, panelX + 18, panelY + 56);
+
+  if (!origin) {
+    wrapText(
+      "Travel is only available while standing beside a discovered blue wagon station.",
+      panelX + 18,
+      panelY + 92,
+      panelW - 36,
+    );
+  } else {
+    ctx.fillStyle = "#b8c9e5";
+    ctx.fillText(`FROM: ${origin.name}`, panelX + 18, panelY + 88);
+    if (!destinations.length) {
+      ctx.fillStyle = "#fff6dc";
+      wrapText("No other wagon stations discovered yet.", panelX + 18, panelY + 122, panelW - 36);
     } else {
-      ctx.fillText(`At: ${origin.name}`, panelX + 14, offY + 56);
-      const destinations = mapData.wagons.filter((w) => w.discovered && w.id !== origin.id);
-      if (!destinations.length) {
-        wrapText("No other wagon stations discovered yet.", panelX + 14, offY + 80, panelW - 28);
-      } else {
-        destinations.forEach((dest, i) => {
-          const cost = travelCost(origin, dest);
-          const selected = i === game.map.selected;
-          ctx.fillStyle = selected ? "#f5dd8b" : "#f4f1e8";
-          ctx.fillText(`${selected ? "> " : "  "}${dest.name} (${cost}g)`, panelX + 14, offY + 86 + i * 26);
-        });
-        ctx.fillStyle = "rgba(244,241,232,0.74)";
+      destinations.forEach((destination, index) => {
+        const rowY = panelY + 112 + index * 54;
+        const selected = index === game.map.selected;
+        ctx.fillStyle = selected ? "rgba(246,196,83,0.2)" : "rgba(255,255,255,0.04)";
+        ctx.fillRect(panelX + 12, rowY, panelW - 24, 44);
+        if (selected) {
+          ctx.fillStyle = "#f6c453";
+          ctx.fillRect(panelX + 12, rowY, 5, 44);
+        }
+        ctx.fillStyle = selected ? "#f5dd8b" : "#f4f1e8";
+        ctx.font = "800 13px Inter, sans-serif";
+        ctx.fillText(`${selected ? "▶" : " "} ${destination.name}`, panelX + 24, rowY + 18);
+        ctx.fillStyle = selected ? "#fff6dc" : "rgba(244,241,232,0.7)";
         ctx.font = "700 11px Inter, sans-serif";
-        wrapText("W/S select, Enter/Space travel, M/Esc close", panelX + 14, offY + 86 + destinations.length * 26 + 16, panelW - 28);
-      }
+        ctx.fillText(`${travelCost(origin, destination)} gold`, panelX + 44, rowY + 35);
+      });
     }
   }
+
+  ctx.fillStyle = "rgba(244,241,232,0.76)";
+  ctx.font = "700 11px Inter, sans-serif";
+  wrapText("W/S or arrows: select", panelX + 18, panelY + panelH - 68, panelW - 36);
+  wrapText("E or Enter: travel   M or Esc: close", panelX + 18, panelY + panelH - 44, panelW - 36);
+
+  ctx.fillStyle = "rgba(231,216,171,0.9)";
+  ctx.fillRect(offX + 8, offY + mapH - 32, 284, 24);
+  ctx.fillStyle = "rgba(44,33,27,0.86)";
+  ctx.font = "700 11px Inter, sans-serif";
+  ctx.textAlign = "left";
+  ctx.fillText("■ City   ▲ Dungeon   ● Wagon   ● You", offX + 16, offY + mapH - 15);
 }
 
 function drawMapLabel(x, y, text, color) {
