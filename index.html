@@ -3,11 +3,24 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Frieren Spell-Grimoire Proof of Concept</title>
+    <title>Frieren: Spell-Grimoire</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <main id="game-shell">
+      <section id="start-menu">
+        <div id="menu-slots" class="menu-panel">
+          <h1>Frieren: Beyond Journey's End</h1>
+          <p class="menu-sub">Choose a save file</p>
+          <div id="slot-list"></div>
+        </div>
+        <div id="menu-characters" class="menu-panel" hidden>
+          <h1>Choose Your Character</h1>
+          <p class="menu-sub">This choice is permanent for this save file.</p>
+          <div id="character-list"></div>
+          <button id="character-back" class="menu-back">Back</button>
+        </div>
+      </section>
       <canvas id="game" width="1280" height="720" aria-label="Playable fantasy game prototype"></canvas>
       <section id="hud" aria-live="polite">
         <div class="meter-row">
@@ -23,6 +36,7 @@
           <div class="meter mana"><i id="mana-bar"></i></div>
         </div>
         <div class="status-line" id="status-line">Overworld</div>
+        <div class="status-line" id="gold-line">Gold: 0</div>
       </section>
       <section id="objective">
         <strong id="objective-title">Heines Krautgarten</strong>
@@ -50,11 +64,14 @@
         <span>WASD/Arrows</span><span>Move</span>
         <span>Space</span><span>Dodge / Jump / Flugmagie</span>
         <span>J</span><span>Zoltraak</span>
+        <span>K</span><span>Schwarzes Loch (if known)</span>
         <span>E</span><span>Interact</span>
         <span>R</span><span>Rest</span>
+        <span>M</span><span>Map / Fast Travel</span>
       </section>
+      <button id="menu-button" title="Save menu">☰</button>
       <div id="toast"></div>
     </main>
-    <script src="src/main.js"></script>
+    <script type="module" src="src/main.js"></script>
   </body>
 </html>
